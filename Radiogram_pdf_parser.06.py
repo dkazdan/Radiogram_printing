@@ -1,3 +1,18 @@
+"""
+Python script for creating foldable, mailable radiogram
+for delivery from .m2s program.
+
+Started 8 March 2026
+
+Needs pulldown menu for .m2s file, as that is now hard-coded.
+Similar window for storage name of .pdf file.
+
+DK
+
+"""
+
+
+
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
