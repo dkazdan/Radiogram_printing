@@ -21,6 +21,12 @@ import tkinter as tk
 from tkinter import filedialog
 import os
 
+# for formatting the boilerplate paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+
 PAGE_WIDTH, PAGE_HEIGHT = letter
 
 # ---------------------------------------------------------
@@ -53,8 +59,10 @@ NUMBER_WORDS = {
 
 ARL_TEXT = {
 50: "Greetings by Amateur Radio.",
-56: "Congratulations on your achievement.",
-46: "Greetings on your birthday and best wishes for many more to come."
+56: "Congratulations on your achievement:",
+46: "Greetings on your birthday and best wishes for many more to come.",
+47: "Reference your message number _____ to _____ delivered on _____ at _____ UTC.",
+67: "Your message number _______ undeliverable because of _______. Please advise."
 }
 
 # ---------------------------------------------------------
@@ -123,6 +131,7 @@ def parse_flmsg_radiogram(filename):
         "prec":"",
         "station":"",
         "check":"",
+        "date":"",
         "place":"",
         "address":[],
         "telephone":"",
@@ -146,6 +155,9 @@ def parse_flmsg_radiogram(filename):
 
     if "ck" in raw:
         data["check"] = decode_flmsg_value(raw["ck"][0])
+        
+    if "d1" in raw:
+        data["date"] = decode_flmsg_value(raw["d1"][0])
 
     if "sig" in raw:
         data["signature"] = decode_flmsg_value(raw["sig"][0])
@@ -159,7 +171,7 @@ def parse_flmsg_radiogram(filename):
     if "msg" in raw:
         msg = [decode_flmsg_value(x) for x in raw["msg"]]
         data["message"] = " ".join(msg)
-
+        
     return data
 
 # ---------------------------------------------------------
@@ -297,9 +309,13 @@ def draw_radiogram_grid(c, text, x, y):
 
 def draw_radiogram(c,data):
 
+    # Title
     c.setFont("Helvetica-Bold",16)
-    c.drawCentredString(PAGE_WIDTH/2,750,"AMATEUR (\"HAM\") RADIO RADIOGRAM")
+    c.drawCentredString(PAGE_WIDTH/2,750,"AMATEUR (“HAM”) RADIO RADIOGRAM")
+    c.setFont("Helvetica-Bold",12)
+    c.drawCentredString(PAGE_WIDTH/2,735,"for mail delivery")
 
+    # Header
     c.setFont("Helvetica",10)
 
     c.drawString(40,710,"Number:")
@@ -308,15 +324,17 @@ def draw_radiogram(c,data):
     c.drawString(180,710,"Precedence:")
     c.drawString(260,710,data["prec"])
 
-    c.drawString(340,710,"Station:")
-    c.drawString(400,710,data["station"])
+    c.drawString(380,710,"Station:")
+    c.drawString(420,710,data["station"])
 
     c.drawString(40,680,"Check:")
     c.drawString(100,680,data["check"])
 
-    c.drawString(180,680,"Place of Origin:")
-    c.drawString(300,680,data["place"])
+    c.drawString(180,680,"City of Origin:")
+    c.drawString(260,680,data["place"])
 
+    c.drawString(380,680,"Date:")
+    c.drawString(420,680,data["date"])
 
     # Address
     c.drawString(40,640,"TO:")
@@ -366,9 +384,31 @@ def draw_radiogram(c,data):
 
     c.setFont("Helvetica",10)
 
-    c.drawString(40,sig_y,"SIGNED:")
+    c.drawString(40,sig_y,"SIGNATURE:")
     c.drawString(120,sig_y,data["signature"])
+    
+    # Boilerplate
+    boilerplate_text = (
+        """This message was handled free of charge by a licensed amateur radio operator. As such messages are
+        handled solely for the pleasure of operating, no compensation can be
+        accepted by a “ham” operator. A return message may be filed with the “ham”
+        delivering this message to you. Further information on amateur radio may be
+        obtained from ARRL Headquarters, 225 Main Street, Newington, CT 06111"""
+    )
 
+    # Create a style for the boilerplate paragraph
+    styles = getSampleStyleSheet()
+    style = styles["Normal"]
+    style.fontName = "Times-Italic"
+    style.fontSize = 11
+    style.leading = 18  # line spacing
+
+    # Wrap the paragraph and draw it
+    p = Paragraph(boilerplate_text, style)
+    p.wrapOn(c, 500, 200)   # width, height
+    p.drawOn(c, 45, 250)    # x, y position
+
+#    c.save()
 
 # ---------------------------------------------------------
 
